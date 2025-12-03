@@ -150,14 +150,12 @@ cython_debug/
 .DS_Store
 
 # Project specific
-# Archivos de mapas generados
-*.png
-*.jpg
-*.jpeg
-*.svg
-*.pdf
+# Archivos de mapas generados (pero NO evidencias/)
 mapa_*.png
 mapa_*.pdf
+mapa_*.jpg
+mapa_*.jpeg
+mapa_*.svg
 
 # Datos de OSM descargados
 *.osm
@@ -170,3 +168,7 @@ mapa_*.pdf
 # Cache de OSMnx
 cache/
 osmnx_cache/
+
+# Permitir evidencias (no ignorar)
+!evidencias/
+!evidencias/**
