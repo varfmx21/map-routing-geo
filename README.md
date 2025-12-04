@@ -53,3 +53,21 @@ Punto 20: lat=20.742, lon=-103.419
 ### *Mapa con coordenadas y vertices más cercanos*
 
 ![Mapa con coordenadas y vertices más cercanos](./evidencias/1.5.png)
+
+# **COMPONENTE 2 — Planeador de rutas**
+
+### *5 parejas a menos de 1km*
+
+![Mapa con coordenadas y vertices más cercanos](./evidencias/2-2.1.png)
+
+### *5 parejas entre 1km a 5km*
+
+![Mapa con coordenadas y vertices más cercanos](./evidencias/2-2.2.png)
+
+### *5 parejas a más de 5km*
+
+![Mapa con coordenadas y vertices más cercanos](./evidencias/2-2.3.png)
+
+### *Mejor algoritmo -> A\**
+
+![Mapa con coordenadas y vertices más cercanos](./evidencias/2-2.4.png)

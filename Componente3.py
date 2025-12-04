@@ -4,14 +4,29 @@ import folium
 from scipy.spatial import cKDTree
 import pandas as pd
 import pyproj
-import signal
 import sys
+from math import sqrt
 
-def def_handler(sig, frame):
-    print("\n\n[!] Saliendo del programa...\n")
-    sys.exit(1)
+# Signal handler solo funciona en el main thread
+# Streamlit no soporta esto, así que lo omitimos
+_SIGNAL_HANDLER_ENABLED = False
 
-signal.signal(signal.SIGINT, def_handler)
+def _setup_signal_handler():
+    """Configura el manejador de señales si es posible"""
+    global _SIGNAL_HANDLER_ENABLED
+    if _SIGNAL_HANDLER_ENABLED:
+        return
+    
+    try:
+        import signal
+        def def_handler(sig, frame):
+            print("\n\n[!] Saliendo del programa...\n")
+            sys.exit(1)
+        signal.signal(signal.SIGINT, def_handler)
+        _SIGNAL_HANDLER_ENABLED = True
+    except (ValueError, RuntimeError):
+        # Streamlit o threading no permite signal handlers
+        pass
 
 # Global
 LUGAR = ''
@@ -60,7 +75,30 @@ def obtener_hospital_voronoi(x, y):
     dist, idx = voronoi_tree.query((x, y))
     return idx, dist
 
-def servicio_emergencia(lat, lon):
+def heuristica_euclidiana(nodo1, nodo2):
+    # Obtener coordenadas de los nodos
+    x1 = G_proj.nodes[nodo1]['x']
+    y1 = G_proj.nodes[nodo1]['y']
+    x2 = G_proj.nodes[nodo2]['x']
+    y2 = G_proj.nodes[nodo2]['y']
+    
+    # Calcular distancia euclidiana (Pitágoras)
+    distancia = sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    
+    return distancia
+
+def servicio_emergencia(lat, lon, guardar_html=True):
+    """
+    Calcula la ruta de emergencia desde una ubicación hasta el hospital más cercano.
+    
+    Args:
+        lat: Latitud del usuario
+        lon: Longitud del usuario
+        guardar_html: Si es True, guarda el mapa en un archivo HTML
+    
+    Returns:
+        dict con información de la ruta o None si no se encuentra
+    """
     print(f"\nUsuario en: {lat}, {lon}")
     
     # Transformador de coordenadas
@@ -81,12 +119,12 @@ def servicio_emergencia(lat, lon):
     n_dest = ox.distance.nearest_nodes(G_proj, hx, hy)
     
     try:
-        ruta = nx.shortest_path(G_proj, n_orig, n_dest, weight='length')
-        d_ruta = nx.shortest_path_length(G_proj, n_orig, n_dest, weight='length')
-        print(f"Ruta calculada: {d_ruta:.1f} metros.")
+        ruta = nx.astar_path(G_proj, n_orig, n_dest, heuristic=heuristica_euclidiana, weight='length')
+        d_ruta = nx.astar_path_length(G_proj, n_orig, n_dest, heuristic=heuristica_euclidiana, weight='length')
+        print(f"Ruta calculada con A*: {d_ruta:.1f} metros.")
     except:
         print("No se encontró ruta vial.")
-        return
+        return None
 
     m = folium.Map([lat, lon], zoom_start=13)
     
@@ -103,10 +141,22 @@ def servicio_emergencia(lat, lon):
         
     folium.PolyLine(route_points, color="blue", weight=5, opacity=0.7).add_to(m)
     
-    m.save('ruta_emergencia.html')
-    print("[+] Mapa guardado: ruta_emergencia.html")
+    if guardar_html:
+        m.save('ruta_emergencia.html')
+        print("[+] Mapa guardado: ruta_emergencia.html")
+    
+    # Retornar información para Streamlit
+    return {
+        'mapa': m,
+        'hospital': h_name,
+        'distancia_lineal': dist,
+        'distancia_ruta': d_ruta,
+        'hospital_coords': (h_lat, h_lon),
+        'ruta': ruta
+    }
 
 def main():
+    _setup_signal_handler()
     start()
     servicio_emergencia(20.735, -103.435)
 
